@@ -1,0 +1,230 @@
+```markdown
+# MANUS  
+**Repository Owner:** intotheunknownfearlessly  
+**Status:** Approved  
+**Visibility:** GitHub  
+
+---
+
+## Overview
+
+MANUS is a modular AI systems framework designed to convert high-level ideas into executable, revenue-generating digital infrastructure.
+
+It is structured for:
+- Autonomous agent orchestration  
+- Rapid product deployment  
+- Structured monetization pipelines  
+- Local or cloud-controlled sovereignty  
+
+MANUS is not a prototype framework.  
+It is designed as an execution engine.
+
+---
+
+## Core Philosophy
+
+1. **Architecture First** – Systems precede output.  
+2. **Autonomy Over Manual Effort** – Agents operate with defined roles.  
+3. **Monetization Embedded** – Revenue logic is built into design layers.  
+4. **Ownership & Control** – Deployable locally or on approved infrastructure.  
+5. **No Fragmentation** – Unified logic across build, deploy, and scale.
+
+---
+
+## System Structure
+
+```
+
+/manus
+│
+├── core/
+│   ├── orchestrator/
+│   ├── agent-logic/
+│   ├── execution-engine/
+│
+├── agents/
+│   ├── architect-agent/
+│   ├── builder-agent/
+│   ├── optimizer-agent/
+│   ├── revenue-agent/
+│
+├── pipelines/
+│   ├── product-launch/
+│   ├── digital-offer/
+│   ├── automated-sales/
+│
+├── integrations/
+│   ├── supabase/
+│   ├── vercel/
+│   ├── stripe/
+│   ├── github/
+│
+├── configs/
+│   ├── env.example
+│   ├── system.yaml
+│
+└── README.md
+
+````
+
+---
+
+## Agent Roles
+
+### Architect Agent
+Transforms abstract concepts into structured system blueprints.
+
+### Builder Agent
+Converts blueprint logic into deployable assets (code, landing pages, APIs).
+
+### Optimizer Agent
+Identifies structural inefficiencies and revenue leaks.
+
+### Revenue Agent
+Implements pricing logic, funnel architecture, and offer positioning.
+
+---
+
+## Installation
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/intotheunknownfearlessly/manus.git
+cd manus
+````
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+or
+
+```bash
+pnpm install
+```
+
+### 3. Configure Environment
+
+Copy environment template:
+
+```bash
+cp configs/env.example .env
+```
+
+Fill required variables:
+
+```
+OPENAI_API_KEY=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+STRIPE_SECRET_KEY=
+```
+
+---
+
+## Local Execution
+
+```bash
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## Deployment
+
+Supported environments:
+
+* Vercel
+* Supabase Edge Functions
+* Docker (containerized execution)
+* Local sovereign execution
+
+Example (Vercel):
+
+```bash
+vercel deploy
+```
+
+---
+
+## Monetization Layer
+
+MANUS embeds monetization directly in:
+
+* Offer generation
+* Funnel architecture
+* Subscription logic
+* One-time digital product releases
+* AI-powered premium tooling
+
+It is designed to allow:
+
+* High-ticket product releases
+* Automated micro-offers
+* AI-generated digital product kits
+* Agent-run launch sequences
+
+---
+
+## Security & Sovereignty
+
+* Environment variables isolated
+* Optional local LLM compatibility
+* No forced cloud lock-in
+* Encrypted configuration storage
+
+---
+
+## Roadmap
+
+* Multi-agent collaborative mode
+* Visual orchestration dashboard
+* Revenue telemetry engine
+* Self-improving agent feedback loops
+* Advanced deployment automation
+
+---
+
+## Contribution Guidelines
+
+1. Fork the repository
+2. Create feature branch
+3. Submit pull request with structured documentation
+4. Maintain architectural integrity
+
+---
+
+## License
+
+Specify license in `/LICENSE`.
+
+---
+
+## Disclaimer
+
+MANUS is a structured AI execution system.
+Users are responsible for compliance with platform, financial, and jurisdictional regulations.
+
+---
+
+## Contact
+
+Repository Owner: **intotheunknownfearlessly**
+GitHub: [https://github.com/intotheunknownfearlessly](https://github.com/intotheunknownfearlessly)
+
+---
+
+**Build intentionally. Deploy precisely. Scale without fragmentation.**
+
+```
+```
