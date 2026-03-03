@@ -1,0 +1,3 @@
+export type AgentListing={name:string;capabilities:string[];version:string};
+export const agentRegistry:Record<string,AgentListing>={architect:{name:'architect',capabilities:['system_design','specs'],version:'1.0.0'},revenue:{name:'revenue',capabilities:['pricing','funnels','offers'],version:'1.0.0'},builder:{name:'builder',capabilities:['code_scaffold','integration_map'],version:'1.0.0'},optimizer:{name:'optimizer',capabilities:['conversion','telemetry_gaps'],version:'1.0.0'}};
+export function listAgents(){return Object.values(agentRegistry);}export function getAgent(name:string){return agentRegistry[name]??null;}

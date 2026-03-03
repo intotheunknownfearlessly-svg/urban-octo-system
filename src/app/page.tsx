@@ -1,0 +1,1 @@
+export default function Home(){return(<main><h1 style={{marginBottom:8}}>MANUS</h1><p style={{marginTop:0}}>Full starter.</p><ul><li><code>/api/health</code></li><li><code>/api/orchestrate</code></li><li><code>/api/checkout</code></li><li><code>/api/stripe/webhook</code></li><li><code>/api/dashboard</code></li><li><code>/api/factory</code></li></ul></main>);} 

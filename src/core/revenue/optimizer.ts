@@ -1,0 +1,3 @@
+import { supabaseServer } from '@/integrations/supabase/server';
+import { runLLM } from '@/integrations/llm/provider';
+export async function revenueOptimizer(target:number){const {data}=await supabaseServer.from('revenue_events').select('revenue_amount,product_name,source');const total=data?.reduce((a,r)=>a+Number(r.revenue_amount),0)??0;if(total<target){const breakdown=JSON.stringify({total,sample:(data??[]).slice(0,10)});const plan=await runLLM(`Revenue below target. Produce conversion + pricing + funnel improvements. Data: ${breakdown}`);return {status:'below_target',total,plan};}return {status:'on_track',total,plan:'Revenue stable — initiate scaling playbook.'};}

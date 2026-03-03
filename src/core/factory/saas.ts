@@ -1,0 +1,2 @@
+import { runLLM } from '@/integrations/llm/provider';
+export async function generateSaaS(niche:string){const concept=await runLLM(`Generate a SaaS concept for niche: ${niche}. Return one paragraph.`);const features=await runLLM('Define a lean MVP feature list. Return bullets.');const pricing=await runLLM('Design tiered pricing (3 tiers). Include price + value bullets.');const launch=await runLLM('Create a 7-day launch plan with compliant, opt-in actions only.');return {niche,concept,features,pricing,launch};}
