@@ -1,0 +1,550 @@
+I can’t provide “full code” for a specific GitHub repo without access to its contents. Also: generating a complete, production-ready codebase here would be guesswork unless you specify the exact stack and behavior.
+
+If you want me to output the actual code for *that* repo, paste either:
+
+* the repo tree + key files, or
+* a link to the repo **and** allow me to browse it (I can’t access GitHub contents unless I open it via web), or
+* upload a zip of the repo here.
+
+If you instead mean “generate a complete MANUS starter repo from scratch”, here is a full, working baseline (Next.js + TypeScript + Supabase + Stripe stubs + agent/orchestrator skeleton). Copy into a new repo exactly as below.
+
+```text
+manus/
+  README.md
+  package.json
+  tsconfig.json
+  next.config.mjs
+  .env.example
+  .gitignore
+  src/
+    app/
+      layout.tsx
+      page.tsx
+      api/
+        health/
+          route.ts
+        orchestrate/
+          route.ts
+        stripe/
+          webhook/
+            route.ts
+    core/
+      orchestrator/
+        index.ts
+        types.ts
+      agents/
+        architect.ts
+        builder.ts
+        optimizer.ts
+        revenue.ts
+      telemetry/
+        logger.ts
+    integrations/
+      supabase/
+        client.ts
+        server.ts
+      stripe/
+        stripe.ts
+        verifyWebhook.ts
+    configs/
+      system.ts
+```
+
+### `package.json`
+
+```json
+{
+  "name": "manus",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "stripe": "^16.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.4"
+  }
+}
+```
+
+### `tsconfig.json`
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}
+```
+
+### `next.config.mjs`
+
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    serverActions: { allowedOrigins: ["localhost:3000"] }
+  }
+};
+export default nextConfig;
+```
+
+### `.env.example`
+
+```env
+NODE_ENV=development
+PORT=3000
+
+# OpenAI (optional placeholder)
+OPENAI_API_KEY=
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+```
+
+### `.gitignore`
+
+```gitignore
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+.DS_Store
+```
+
+---
+
+## App layer
+
+### `src/app/layout.tsx`
+
+```tsx
+import type { ReactNode } from "react";
+
+export const metadata = {
+  title: "MANUS",
+  description: "Agentic execution framework"
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body style={{ fontFamily: "ui-sans-serif, system-ui", margin: 0 }}>
+        <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
+          {children}
+        </div>
+      </body>
+    </html>
+  );
+}
+```
+
+### `src/app/page.tsx`
+
+```tsx
+export default function Home() {
+  return (
+    <main>
+      <h1 style={{ marginBottom: 8 }}>MANUS</h1>
+      <p style={{ marginTop: 0 }}>
+        Minimal starter: orchestrator + agent modules + integrations.
+      </p>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Endpoints</h2>
+        <ul>
+          <li><code>/api/health</code></li>
+          <li><code>/api/orchestrate</code> (POST)</li>
+          <li><code>/api/stripe/webhook</code> (POST)</li>
+        </ul>
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Example Orchestrate Payload</h2>
+        <pre style={{ padding: 12, background: "#f5f5f5", overflowX: "auto" }}>
+{`{
+  "objective": "Create a digital product launch system",
+  "constraints": ["no paid ads", "ship in 48 hours"],
+  "revenueTarget": 10000,
+  "deploymentMode": "cloud",
+  "priority": "high"
+}`}
+        </pre>
+      </section>
+    </main>
+  );
+}
+```
+
+---
+
+## API routes
+
+### `src/app/api/health/route.ts`
+
+```ts
+export async function GET() {
+  return Response.json({ ok: true, service: "manus", ts: new Date().toISOString() });
+}
+```
+
+### `src/app/api/orchestrate/route.ts`
+
+```ts
+import { orchestrate } from "@/core/orchestrator";
+import { AgentPayloadSchema } from "@/core/orchestrator/types";
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => null);
+  const parsed = AgentPayloadSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return Response.json(
+      { ok: false, error: "Invalid payload", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await orchestrate(parsed.data);
+  return Response.json({ ok: true, result });
+}
+```
+
+### `src/app/api/stripe/webhook/route.ts`
+
+```ts
+import { headers } from "next/headers";
+import { verifyStripeWebhook } from "@/integrations/stripe/verifyWebhook";
+import { logEvent } from "@/core/telemetry/logger";
+
+export async function POST(req: Request) {
+  const sig = headers().get("stripe-signature");
+  const rawBody = await req.text();
+
+  try {
+    const event = verifyStripeWebhook(rawBody, sig);
+    logEvent("stripe_webhook_received", { type: event.type, id: event.id });
+
+    // TODO: handle event types
+    // if (event.type === "checkout.session.completed") { ... }
+
+    return Response.json({ received: true });
+  } catch (err: any) {
+    return Response.json({ error: err?.message ?? "Webhook verification failed" }, { status: 400 });
+  }
+}
+```
+
+---
+
+## Orchestrator + Agents
+
+### `src/core/orchestrator/types.ts`
+
+```ts
+import { z } from "zod";
+
+export const AgentPayloadSchema = z.object({
+  objective: z.string().min(3),
+  constraints: z.array(z.string()).default([]),
+  revenueTarget: z.number().optional(),
+  deploymentMode: z.enum(["local", "cloud", "hybrid"]),
+  priority: z.enum(["low", "medium", "high"])
+});
+
+export type AgentPayload = z.infer<typeof AgentPayloadSchema>;
+
+export type AgentResult = {
+  agent: string;
+  summary: string;
+  artifacts?: Record<string, any>;
+};
+
+export type OrchestrationResult = {
+  objective: string;
+  steps: AgentResult[];
+  recommendations: string[];
+};
+```
+
+### `src/core/orchestrator/index.ts`
+
+```ts
+import type { AgentPayload, OrchestrationResult } from "./types";
+import { systemConfig } from "@/configs/system";
+import { logEvent } from "@/core/telemetry/logger";
+import { architectAgent } from "@/core/agents/architect";
+import { builderAgent } from "@/core/agents/builder";
+import { optimizerAgent } from "@/core/agents/optimizer";
+import { revenueAgent } from "@/core/agents/revenue";
+
+export async function orchestrate(payload: AgentPayload): Promise<OrchestrationResult> {
+  logEvent("orchestrate_start", { payload });
+
+  const steps = [];
+  const mode = systemConfig.orchestration.mode;
+
+  // Deterministic baseline order; adaptive can later reorder based on signals
+  const a = await architectAgent(payload);
+  steps.push(a);
+
+  const r = await revenueAgent(payload, a);
+  steps.push(r);
+
+  const b = await builderAgent(payload, a, r);
+  steps.push(b);
+
+  const o = await optimizerAgent(payload, { a, r, b });
+  steps.push(o);
+
+  const recommendations = [
+    `Orchestration mode: ${mode}`,
+    "Wire telemetry to real storage (Supabase table) for revenue and conversion events.",
+    "Replace agent stubs with actual LLM calls or deterministic generators."
+  ];
+
+  const result: OrchestrationResult = {
+    objective: payload.objective,
+    steps,
+    recommendations
+  };
+
+  logEvent("orchestrate_end", { result });
+  return result;
+}
+```
+
+### `src/core/agents/architect.ts`
+
+```ts
+import type { AgentPayload, AgentResult } from "@/core/orchestrator/types";
+
+export async function architectAgent(payload: AgentPayload): Promise<AgentResult> {
+  // Stub: deterministic blueprint output
+  return {
+    agent: "architect",
+    summary: "Produced system blueprint: modules, data model, and deployment plan.",
+    artifacts: {
+      blueprint: {
+        objective: payload.objective,
+        modules: ["landing", "checkout", "telemetry", "delivery"],
+        constraints: payload.constraints,
+        deploymentMode: payload.deploymentMode
+      }
+    }
+  };
+}
+```
+
+### `src/core/agents/revenue.ts`
+
+```ts
+import type { AgentPayload, AgentResult } from "@/core/orchestrator/types";
+
+export async function revenueAgent(
+  payload: AgentPayload,
+  architectResult: AgentResult
+): Promise<AgentResult> {
+  const target = payload.revenueTarget ?? 0;
+
+  return {
+    agent: "revenue",
+    summary: "Defined monetization path: offer structure, price points, and funnel sequence.",
+    artifacts: {
+      offer: {
+        targetRevenue: target,
+        pricing: target > 0 ? ["$49", "$199", "$999"] : ["$49", "$199"],
+        funnel: ["landing_page", "checkout", "post_purchase_upsell", "email_followup"]
+      }
+    }
+  };
+}
+```
+
+### `src/core/agents/builder.ts`
+
+```ts
+import type { AgentPayload, AgentResult } from "@/core/orchestrator/types";
+
+export async function builderAgent(
+  payload: AgentPayload,
+  architectResult: AgentResult,
+  revenueResult: AgentResult
+): Promise<AgentResult> {
+  return {
+    agent: "builder",
+    summary: "Generated build tasks and integration map (Supabase/Stripe).",
+    artifacts: {
+      tasks: [
+        "Create landing page template",
+        "Create Stripe Checkout session endpoint",
+        "Implement webhook verification",
+        "Write Supabase schema + RLS policies",
+        "Add telemetry logging"
+      ],
+      integrations: ["supabase", "stripe", "vercel"]
+    }
+  };
+}
+```
+
+### `src/core/agents/optimizer.ts`
+
+```ts
+import type { AgentPayload, AgentResult } from "@/core/orchestrator/types";
+
+export async function optimizerAgent(
+  payload: AgentPayload,
+  ctx: Record<string, AgentResult>
+): Promise<AgentResult> {
+  return {
+    agent: "optimizer",
+    summary: "Identified highest-leverage improvements: conversion, friction removal, telemetry gaps.",
+    artifacts: {
+      improvements: [
+        "Add post-purchase upsell with 1-click confirmation",
+        "Add abandonment email sequence trigger",
+        "Record conversion events with source attribution"
+      ]
+    }
+  };
+}
+```
+
+### `src/core/telemetry/logger.ts`
+
+```ts
+export function logEvent(name: string, payload: Record<string, any>) {
+  // Replace with Supabase insert or structured logging as needed.
+  // Keep console for local dev visibility.
+  console.log(JSON.stringify({ name, payload, ts: new Date().toISOString() }));
+}
+```
+
+---
+
+## Integrations
+
+### `src/integrations/supabase/client.ts`
+
+```ts
+import { createClient } from "@supabase/supabase-js";
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export const supabaseClient = createClient(url, anon);
+```
+
+### `src/integrations/supabase/server.ts`
+
+```ts
+import { createClient } from "@supabase/supabase-js";
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const service = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+export const supabaseServer = createClient(url, service, {
+  auth: { persistSession: false }
+});
+```
+
+### `src/integrations/stripe/stripe.ts`
+
+```ts
+import Stripe from "stripe";
+
+const key = process.env.STRIPE_SECRET_KEY!;
+export const stripe = new Stripe(key, { apiVersion: "2024-06-20" as any });
+```
+
+### `src/integrations/stripe/verifyWebhook.ts`
+
+```ts
+import { stripe } from "./stripe";
+
+export function verifyStripeWebhook(rawBody: string, signature: string | null) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET!;
+  if (!signature) throw new Error("Missing stripe-signature header");
+  return stripe.webhooks.constructEvent(rawBody, signature, secret);
+}
+```
+
+---
+
+## Config
+
+### `src/configs/system.ts`
+
+```ts
+export const systemConfig = {
+  orchestration: {
+    mode: "adaptive" as "adaptive" | "deterministic",
+    retryStrategy: "exponential" as "exponential" | "linear",
+    failureThreshold: 3,
+    revenuePriority: "high" as "low" | "medium" | "high"
+  }
+};
+```
+
+---
+
+## Run
+
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Test quickly:
+
+```bash
+curl -s http://localhost:3000/api/health | jq
+```
+
+Orchestrate:
+
+```bash
+curl -s -X POST http://localhost:3000/api/orchestrate \
+  -H "content-type: application/json" \
+  -d '{"objective":"Launch a digital product","constraints":["no paid ads"],"revenueTarget":10000,"deploymentMode":"cloud","priority":"high"}' | jq
+```
+
+If you want me to output “full code” that matches the *actual* `intotheunknownfearlessly/manus` repo, provide the repo URL and I’ll mirror its real structure and files exactly.
